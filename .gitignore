@@ -1,0 +1,17 @@
+# Entornos virtuales de Python
+.venv-cltk/
+venv/
+
+# Datos personales y biblioteca local
+datos/
+
+# Cachés de Python
+__pycache__/
+*.pyc
+
+# Configuración personal de VS Code
+.vscode/
+
+# Archivos temporales
+*.tmp
+*.log

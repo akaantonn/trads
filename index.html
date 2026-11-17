@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="gl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Biblioteca de Traducións Clásicas</title>
+    <meta name="description" content="Biblioteca persoal de traducións de textos clásicos en grego e latín, con análise morfolóxica e vocabulario.">
+    <meta name="theme-color" content="#7a2431">
+    <meta name="color-scheme" content="light dark">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%237a2431'/%3E%3Ctext x='32' y='46' font-family='Georgia,serif' font-size='42' font-style='italic' font-weight='700' text-anchor='middle' fill='%23fff'%3E%CE%BB%3C/text%3E%3C/svg%3E">
+
+    <script>
+        try {
+            var temaGardado = localStorage.getItem("temaBiblioteca");
+            if (temaGardado) document.documentElement.dataset.tema = temaGardado;
+        } catch (e) {}
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Gentium+Plus:ital,wght@0,400;0,700;1,400&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <a class="salto" href="#contenido">Saltar ao contido</a>
+
+    <noscript><p class="aviso-js">Esta aplicación necesita JavaScript.</p></noscript>
+
+    <header>
+        <h1><span class="marca" aria-hidden="true">λ</span> Biblioteca de Traducións Clásicas</h1>
+        <div class="controis">
+            <span id="estadoNube" class="estado-nube" role="status" data-estado=""></span>
+            <button type="button" class="boton-icona" onclick="cambiarTamanoTexto(-1)" aria-label="Reducir o tamaño do texto" title="Reducir texto">A−</button>
+            <button type="button" class="boton-icona" onclick="cambiarTamanoTexto(1)" aria-label="Aumentar o tamaño do texto" title="Aumentar texto">A+</button>
+            <button id="botonTema" class="boton-tema" type="button" onclick="cambiarTema()" aria-label="Cambiar de tema"></button>
+            <button type="button" class="boton-icona" onclick="abrirAxuda()" aria-label="Atallos de teclado" title="Atallos (?)">?</button>
+        </div>
+    </header>
+
+    <main id="contenido" tabindex="-1">
+
+        <!-- BIBLIOTECA -->
+
+        <section id="pantallaBiblioteca">
+
+            <div class="barra-superior">
+                <h2>Os meus textos</h2>
+
+                <div class="acciones-barra">
+                    <button id="botonContinuar" onclick="continuarUltimo()">Continuar onde o deixei</button>
+                    <button class="boton-secundario" onclick="mostrarNuevoTexto()">Novo texto</button>
+                    <button class="boton-secundario" onclick="mostrarImportarObra()">Importar obra</button>
+                    <button class="boton-secundario" onclick="mostrarVocabulario()">Vocabulario</button>
+                    <button id="botonPapelera" class="boton-secundario oculto" onclick="mostrarPapelera()" title="Textos eliminados que aínda se poden recuperar">Papeleira</button>
+                    <button class="boton-secundario" onclick="exportarCopiaCompleta()" title="Descarga todos os textos, traducións, notas e vocabulario nun único ficheiro">Copia de seguridade</button>
+                    <button class="boton-secundario" onclick="sincronizar(true)">Sincronizar</button>
+                </div>
+            </div>
+
+            <input
+                id="buscador"
+                class="buscador"
+                type="search"
+                autocomplete="off"
+                placeholder="Buscar en autor, obra, referencia, texto, tradución, notas e lemas…  ( / )"
+                aria-label="Buscar na biblioteca"
+                oninput="buscarConRetraso()"
+            >
+
+            <div id="resumenProgreso" class="resumen-progreso"></div>
+
+            <div class="filtros" role="group" aria-label="Filtrar por idioma">
+                <button class="filtro" data-idioma="todos" aria-pressed="true" onclick="cambiarFiltroIdioma('todos')">Todos</button>
+                <button class="filtro" data-idioma="griego" aria-pressed="false" onclick="cambiarFiltroIdioma('griego')">Grego</button>
+                <button class="filtro" data-idioma="latin" aria-pressed="false" onclick="cambiarFiltroIdioma('latin')">Latín</button>
+            </div>
+            
+            <div class="filtros-extra">
+                <label>Estado
+                    <select id="filtroEstado" onchange="mostrarBiblioteca()">
+                        <option value="todos">Todos</option>
+                        <option value="pendiente">Pendente</option>
+                        <option value="borrador">Borrador</option>
+                        <option value="revisado">Revisado</option>
+                    </select>
+                </label>
+                <label>Exportar como
+                    <select id="formatoExportacion">
+                        <option value="txt">TXT</option>
+                        <option value="md">Markdown</option>
+                        <option value="html">HTML</option>
+                        <option value="json">JSON</option>
+                        <option value="pdf">PDF (imprimir)</option>
+                    </select>
+                </label>
+            </div>
+
+            <div id="recientes">
+
+                 <h2>Recentes</h2>
+
+              <div id="listaRecientes"></div>
+
+            </div>
+            
+            <div
+                id="biblioteca"
+                class="biblioteca">
+            </div>
+
+        </section>
+
+
+        <!-- NOVO TEXTO -->
+
+
+<section
+    id="pantallaNuevo"
+    class="oculto">
+
+    <div class="formulario">
+
+        <h2>Nova obra ou fragmento</h2>
+
+        <div class="campo">
+            <label for="idioma">Idioma</label>
+            <select id="idioma">
+                <option value="griego">Grego</option>
+                <option value="latin">Latín</option>
+            </select>
+        </div>
+
+        <div class="campo">
+            <label for="coleccion">Colección (opcional)</label>
+            <input
+                id="coleccion"
+                type="text"
+                placeholder="Ex. Antoloxía clase"
+            >
+        </div>
+
+        <div class="campo">
+            <label for="autor">Autor</label>
+            <input
+                id="autor"
+                type="text"
+                placeholder="Ex. Cicerón"
+            >
+        </div>
+
+        <div class="campo">
+            <label for="obra">Obra</label>
+            <input
+                id="obra"
+                type="text"
+                placeholder="Ex. De bello Gallico"
+            >
+        </div>
+
+        <div class="campo">
+            <label for="subdivision">Libro ou subdivisión (opcional)</label>
+            <input
+                id="subdivision"
+                type="text"
+                placeholder="Ex. Liber I / Canto I"
+            >
+        </div>
+
+        <div class="campo">
+            <label for="referencia">Capítulo / sección / fragmento</label>
+            <input
+                id="referencia"
+                type="text"
+                placeholder="Ex. I, 1"
+            >
+        </div>
+
+        <div class="campo">
+            <label for="textoOriginal">Texto orixinal</label>
+            <textarea
+                id="textoOriginal"
+                placeholder="Pega aquí o texto grego ou latino..."
+            ></textarea>
+        </div>
+
+        <div class="acciones-finales">
+
+            <button onclick="crearTexto()">
+                Gardar texto
+            </button>
+
+            <button
+                class="boton-secundario"
+                onclick="mostrarBiblioteca()"
+            >
+                Cancelar
+            </button>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+
+        <!-- IMPORTAR OBRA -->
+
+<section id="pantallaImportar" class="oculto">
+
+    <div class="lector">
+
+        <button
+            class="boton-secundario"
+            onclick="mostrarBiblioteca()"
+        >
+            Volver á biblioteca
+        </button>
+
+        <h2>Importar obra</h2>
+
+        <p class="axuda-importar">
+            Selecciona un ficheiro JSON cunha obra preparada, unha exportación en JSON
+            ou unha copia de seguridade. Os textos que xa tes non se duplican.
+        </p>
+
+        <input
+             type="file"
+            id="archivoImportacion"
+            aria-label="Ficheiro de copia de seguridade ou obra (.json)"
+            accept=".json,application/json"
+            onchange="leerArchivoImportacion(event)"
+        >
+
+    </div>
+
+</section>
+
+        <!-- PAPELEIRA -->
+
+        <section id="pantallaPapelera" class="oculto">
+            <div class="lector">
+                <button class="boton-secundario" onclick="mostrarBiblioteca()">Volver á biblioteca</button>
+
+                <h2 class="titulo-vocabulario">Papeleira</h2>
+                <p id="resumenPapelera" class="estado-analisis"></p>
+
+                <div id="accionsPapelera" class="acciones-barra acciones-vocabulario">
+                    <button onclick="restaurarTodoPapelera()">Restaurar todo</button>
+                    <button class="boton-peligro" onclick="baleirarPapelera()">Baleirar papeleira</button>
+                </div>
+
+                <div id="listaPapelera" class="lista-vocabulario"></div>
+            </div>
+        </section>
+
+        <!-- VOCABULARIO -->
+
+        <section id="pantallaVocabulario" class="oculto">
+            <div class="lector">
+                <button class="boton-secundario" onclick="mostrarBiblioteca()">Volver á biblioteca</button>
+
+                <h2 class="titulo-vocabulario">Vocabulario</h2>
+                <p id="resumenVocabulario" class="estado-analisis"></p>
+
+                <div class="filtros-extra">
+                    <label>Idioma
+                        <select id="vocabIdioma" onchange="mostrarVocabulario(true)">
+                            <option value="todos">Todos</option>
+                            <option value="latin">Latín</option>
+                            <option value="griego">Grego</option>
+                        </select>
+                    </label>
+                    <label>Obra
+                        <select id="vocabObra" onchange="mostrarVocabulario(true)"></select>
+                    </label>
+                    <label>Estado
+                        <select id="vocabEstado" onchange="mostrarVocabulario(true)">
+                            <option value="todos">Todos</option>
+                            <option value="nueva">Novas</option>
+                            <option value="aprendiendo">Aprendendo</option>
+                            <option value="sabida">Sabidas</option>
+                        </select>
+                    </label>
+                    <label>Orde
+                        <select id="vocabOrde" onchange="mostrarVocabulario(true)">
+                            <option value="frecuencia">Máis frecuentes</option>
+                            <option value="alfabetico">Alfabética</option>
+                        </select>
+                    </label>
+                </div>
+
+                <input id="vocabBusca" class="buscador" type="search" autocomplete="off"
+                       placeholder="Buscar lema, forma ou significado…"
+                       aria-label="Buscar no vocabulario" oninput="buscarVocabularioConRetraso()">
+
+                <details class="vocab-rapido vocab-manual">
+                    <summary>Engadir unha palabra a man</summary>
+                    <div class="vocab-rapido-campos">
+                        <select id="vocabNuevoIdioma" aria-label="Idioma">
+                            <option value="latin">Latín</option>
+                            <option value="griego">Grego</option>
+                        </select>
+                        <input id="vocabNuevoLema" type="text" placeholder="Lema (forma de dicionario)" aria-label="Lema" autocomplete="off">
+                        <input id="vocabNuevoSig" type="text" placeholder="Significado" aria-label="Significado" autocomplete="off"
+                               onkeydown="if (event.key === 'Enter') engadirVocabDesdeFormulario()">
+                        <button type="button" onclick="engadirVocabDesdeFormulario()">Engadir</button>
+                    </div>
+                </details>
+
+                <div class="acciones-barra acciones-vocabulario">
+                    <button id="botonAnalizarTodo" onclick="analizarPendientes()">Analizar textos pendentes</button>
+                    <button onclick="empezarRepasoEspaciado()" id="botonEspaciado" title="Repaso espaciado (SM-2): cada palabra volve cando toca">Repaso espaciado</button>
+                    <button class="boton-secundario" onclick="empezarRepaso()">Estudar con tarxetas</button>
+                    <button class="boton-secundario" onclick="exportarVocabulario('csv')">Exportar CSV (Anki)</button>
+                    <button class="boton-secundario" onclick="exportarVocabulario('pdf')">Exportar PDF</button>
+                </div>
+
+                <div id="estadoAnalisisTodo" class="estado-analisis" role="status"></div>
+                <div id="repasoVocabulario" class="repaso oculto"></div>
+                <div id="listaVocabulario" class="lista-vocabulario"></div>
+            </div>
+        </section>
+
+        <!-- LECTOR E TRADUCIÓN -->
+
+        <section
+            id="pantallaTexto"
+            class="oculto">
+
+            <div class="lector">
+
+                <button
+                    class="boton-secundario"
+                    onclick="mostrarBiblioteca()"
+                >
+                    Volver á biblioteca
+                </button>
+
+
+                <button type="button" id="botonModoEstudo" class="boton-modo boton-secundario" aria-pressed="false" onclick="alternarModoEstudo()">Modo estudo</button>
+
+                <h2 id="tituloTexto"></h2>
+
+                <p id="informacionTexto"></p>
+
+                <div id="posicionFragmento"></div>
+
+                <div class="paralelo">
+<div class="columna">
+<div class="cabeceira-columna">
+    <h3>Texto orixinal</h3>
+    <div class="acciones-columna">
+        <button type="button" id="botonColores" class="boton-secundario boton-pequeno boton-conmutador" aria-pressed="true" onclick="alternarColores()" title="Amosar ou agochar o código de cores gramaticais (Alt+C)">Cores: sí</button>
+        <button type="button" id="botonAnalizar" class="boton-secundario boton-pequeno" onclick="analizarTextoActual()">Analizar</button>
+    </div>
+</div>
+<div id="estadoAnalisis" class="estado-analisis" role="status"></div>
+
+<details id="axustesLectura" class="axustes-lectura">
+    <summary>Axustes de lectura</summary>
+    <div class="axustes-corpo">
+        <label>Cores
+            <select id="axusteModoColor">
+                <option value="ambos">Casos e clases de palabra</option>
+                <option value="casos">Só casos</option>
+                <option value="clases">Só clases</option>
+            </select>
+        </label>
+        <label class="axuste-check"><input type="checkbox" id="axusteConcordancia"> Concordancia: resaltar as palabras que concordan coa escollida</label>
+        <label>Concordar en
+            <select id="axusteConcordanciaModo">
+                <option value="xn">Xénero e número</option>
+                <option value="cxn">Caso, xénero e número</option>
+            </select>
+        </label>
+        <label class="axuste-check"><input type="checkbox" id="axusteFuncionCaso"> Función habitual do caso no cadro de análise</label>
+        <label class="axuste-check"><input type="checkbox" id="axusteRexencia"> Caso que rexe cada preposición (marca +ac., +ab.…)</label>
+        <label class="axuste-check"><input type="checkbox" id="axustePasaxes"> Outros pasaxes da biblioteca co mesmo lema</label>
+    </div>
+</details>
+<div id="leyendaColores" class="leyenda-colores oculto" role="group" aria-label="Lenda das cores gramaticais"></div>
+
+                <div
+                    id="textoOriginalMostrar"
+                    class="texto-original"
+                    role="group"
+                    aria-label="Texto orixinal. Usa as frechas esquerda e dereita para moverte entre palabras e Intro para abrir a nota.">
+                </div>
+
+
+                </div>
+<div class="columna traduccion">
+
+                    <div class="cabeceira-columna">
+                        <h3>A miña tradución</h3>
+                        <div class="acciones-columna">
+                            <button type="button" id="botonConectar" class="boton-secundario boton-pequeno boton-conmutador" aria-pressed="false" onclick="alternarConectar()" title="Unir palabras do orixinal coas da tradución e gardalas no vocabulario">Conectar palabras</button>
+                        </div>
+                    </div>
+
+                    <textarea
+                        id="campoTraduccion"
+                        aria-label="A miña tradución"
+                        placeholder="Escribe aquí a túa tradución..."
+                    ></textarea>
+
+                    <div id="traduccionLectura" class="traduccion-lectura oculto"></div>
+
+                    <details id="historialTraduccion" class="historial oculto">
+                        <summary id="resumenHistorial">Versións anteriores</summary>
+                        <div id="listaVersiones"></div>
+                    </details>
+
+                </div>
+</div>
+
+
+                <section id="mesaConectar" class="mesa-conectar oculto" aria-label="Conexións entre o orixinal e a tradución">
+                    <div class="mesa-cabeceira">
+                        <h3>Orixinal ⟷ tradución</h3>
+                        <button type="button" class="boton-secundario boton-pequeno" onclick="alternarConectar()">Rematar conexións</button>
+                    </div>
+                    <div class="mesa-scroll">
+                        <div id="lienzoConex" class="lienzo-conex">
+                            <div id="filaOrixe" class="fila-conex" role="group" aria-label="Palabras do orixinal"></div>
+                            <div id="pasilloConex" class="pasillo-conex"></div>
+                            <div id="filaTrad" class="fila-conex" role="group" aria-label="Palabras da tradución"></div>
+                            <svg id="lineasConexion" class="lineas-conexion" aria-hidden="true"></svg>
+                        </div>
+                    </div>
+                </section>
+
+                <div id="barraConectar" class="barra-conectar oculto">
+                    <p id="axudaConectar" class="axuda-conectar" role="status">Escolle unha ou varias palabras do orixinal e outras da tradución, e preme «Unir».</p>
+                    <div class="campos-conectar">
+                        <label>Orixinal (lema)<input type="text" id="conexLema" autocomplete="off"></label>
+                        <label>Significado<input type="text" id="conexSig" autocomplete="off"></label>
+                        <label class="axuste-check"><input type="checkbox" id="conexVocab" checked> Gardar no vocabulario</label>
+                    </div>
+                    <div class="acciones-conectar">
+                        <button type="button" onclick="unirConexion()">Unir</button>
+                        <button type="button" class="boton-secundario" onclick="limparSeleccionConexion()">Limpar escolla</button>
+                    </div>
+                    <ul id="listaConexions" class="lista-conexions"></ul>
+                </div>
+
+                <div class="notas-fragmento">
+                    <label for="notaFragmento">Notas do fragmento</label>
+                    <textarea id="notaFragmento" placeholder="Observacións filolóxicas sobre este fragmento…"></textarea>
+                </div>
+
+                <!-- NOTAS DE CADA PALABRA -->
+
+<div id="editorNotaPalabra" class="editor-nota-palabra oculto" role="region" aria-label="Editor de notas da palabra">
+
+    <h3 id="tituloNotaPalabra">
+        Notas da palabra
+    </h3>
+
+    <div id="analisisPalabra" class="analisis-palabra oculto"></div>
+
+    <div id="infoCaso" class="info-caso oculto"></div>
+
+    <details id="pasaxes" class="pasaxes oculto">
+        <summary id="resumenPasaxes">Outros pasaxes</summary>
+        <div id="listaPasaxes" class="lista-pasaxes"></div>
+    </details>
+
+    <details id="analisisLista" class="analisis-lista-caixa oculto">
+        <summary>Datos de CLTK (formato orixinal)</summary>
+        <pre id="analisisListaTexto"></pre>
+    </details>
+
+    <div class="enlaces-diccionario">
+        <a id="enlaceLogeion" href="#" target="_blank" rel="noopener noreferrer">Logeion ↗</a>
+        <a id="enlacePerseus" href="#" target="_blank" rel="noopener noreferrer">Perseus ↗</a>
+    </div>
+
+    <button
+        type="button"
+        id="botonInsertarAnalisis"
+        class="boton-secundario boton-pequeno oculto"
+        onclick="insertarAnalisisEnNota()"
+    >
+        Engadir análise á nota
+    </button>
+
+    <textarea
+        id="campoNotaPalabra"
+        aria-label="Nota da palabra"
+        placeholder="Escribe aquí as túas notas sobre esta palabra..."
+    ></textarea>
+
+    <details id="vocabRapido" class="vocab-rapido">
+        <summary>Engadir ao vocabulario</summary>
+        <div class="vocab-rapido-campos">
+            <input id="vocabRapidoLema" type="text" placeholder="Lema (forma de dicionario)" aria-label="Lema" autocomplete="off">
+            <input id="vocabRapidoSig" type="text" placeholder="Significado" aria-label="Significado" autocomplete="off"
+                   onkeydown="if (event.key === 'Enter') gardarVocabRapido()">
+            <button type="button" class="boton-secundario boton-pequeno" onclick="gardarVocabRapido()">Gardar no vocabulario</button>
+        </div>
+    </details>
+
+    <div class="acciones-finales">
+
+        <button onclick="guardarNotaPalabra()">
+            Gardar nota
+        </button>
+
+        <button
+            class="boton-secundario"
+            onclick="cancelarNotaPalabra()"
+        >
+            Cancelar
+        </button>
+
+        <button
+            class="boton-peligro"
+            onclick="eliminarNotaPalabra()"
+        >
+            Eliminar nota
+        </button>
+
+    </div>
+
+</div>
+
+        <div class="navegacion-fragmentos">
+
+    <button
+        type="button"
+        id="botonAnterior"
+        onclick="irAlFragmentoAnterior()"
+    >
+        ← Anterior
+    </button>
+
+    <button
+        type="button"
+        id="botonPendente"
+        class="boton-secundario"
+        title="Saltar ao seguinte fragmento sen traducir (Alt+N)"
+        onclick="irAlSiguientePendiente()"
+    >
+        Seguinte pendente ⇥
+    </button>
+
+    <button
+        type="button"
+        id="botonSeguinte"
+        onclick="irAlFragmentoSiguiente()"
+    >
+        Seguinte →
+    </button>
+
+</div>
+
+                <div class="acciones-finales">
+
+                    <label class="selector-estado">
+                        Estado
+                        <select id="estadoTexto" onchange="cambiarEstadoTexto()">
+                            <option value="pendiente">Pendente</option>
+                            <option value="borrador">Borrador</option>
+                            <option value="revisado">Revisado</option>
+                        </select>
+                    </label>
+
+                    <button onclick="guardarCambios()">
+                        Gardar
+                    </button>
+
+                    <button
+                        class="boton-peligro"
+                        onclick="eliminarTexto()"
+                    >
+                        Eliminar texto
+                    </button>
+
+                </div>
+
+
+
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <dialog id="axuda" class="axuda">
+        <h2>Atallos de teclado</h2>
+        <dl>
+            <dt><kbd>/</kbd></dt><dd>Buscar na biblioteca</dd>
+            <dt><kbd>Ctrl</kbd>+<kbd>S</kbd></dt><dd>Gardar (ou sincronizar)</dd>
+            <dt><kbd>←</kbd> <kbd>→</kbd></dt><dd>Fragmento anterior / seguinte</dd>
+            <dt><kbd>Alt</kbd>+<kbd>A</kbd></dt><dd>Analizar o texto</dd>
+            <dt><kbd>Alt</kbd>+<kbd>C</kbd></dt><dd>Cores gramaticais sí / non</dd>
+            <dt><kbd>Alt</kbd>+<kbd>N</kbd></dt><dd>Seguinte fragmento pendente</dd>
+            <dt><kbd>Alt</kbd>+<kbd>E</kbd></dt><dd>Modo estudo / edición</dd>
+            <dt><kbd>Alt</kbd>+<kbd>T</kbd></dt><dd>Cambiar tema</dd>
+            <dt><kbd>Esc</kbd></dt><dd>Pechar panel</dd>
+            <dt><kbd>?</kbd></dt><dd>Mostrar esta axuda</dd>
+        </dl>
+        <button type="button" onclick="document.getElementById('axuda').close()">Pechar</button>
+    </dialog>
+
+    <script src="app.js"></script>
+
+</body>
+
+</html>
