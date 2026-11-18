@@ -4,10 +4,10 @@ Dunno how this shi works, try to figure it out!
 
 STEPS
 
-1.
-  ```bash
+1. ```bash
 git clone https://github.com/akaantonn/trads.git
 cd trads
+```
 
 2. python -m venv .venv-cltk
 
@@ -23,6 +23,6 @@ or
 
 or 
 
-4.
-```powershell
+4.```powershell
 python servidor.py --carpeta ".\datos" --abrir
+```
